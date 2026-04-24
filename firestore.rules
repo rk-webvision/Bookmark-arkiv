@@ -1,0 +1,91 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 0.1 Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Pillar 2: Validation Blueprints
+    function isValidUserProfile(data) {
+      return data.uid == request.auth.uid 
+        && data.email == request.auth.token.email
+        && data.createdAt is number
+        && data.keys().hasAll(['uid', 'email', 'createdAt'])
+        && data.keys().size() <= 5;
+    }
+
+    function isValidBookmark(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.userId == request.auth.uid
+        && data.url is string && data.url.size() <= 2048
+        && data.title is string && data.title.size() <= 512
+        && (!('description' in data) || data.description == null || (data.description is string && data.description.size() <= 5000))
+        && (!('smartSummary' in data) || data.smartSummary == null || (data.smartSummary is string && data.smartSummary.size() <= 1000))
+        && (!('tags' in data) || data.tags is list && data.tags.size() <= 20)
+        && (!('category' in data) || data.category == null || (data.category is string && data.category.size() <= 100))
+        && (!('isFavorite' in data) || data.isFavorite == null || data.isFavorite is bool)
+        && (!('favicon' in data) || data.favicon == null || (data.favicon is string && data.favicon.size() <= 2048))
+        && data.createdAt is number
+        && data.updatedAt is number;
+    }
+
+    // 1. User Profiles
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserProfile(incoming());
+      allow update: if isOwner(userId) && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().email == existing().email
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL']);
+    }
+
+    // 2. Bookmarks Collection
+    match /users/{userId}/bookmarks/{bookmarkId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(bookmarkId);
+      
+      allow create: if isOwner(userId) 
+        && isValidId(bookmarkId)
+        && isValidBookmark(incoming());
+        
+      allow update: if isOwner(userId)
+        && isValidId(bookmarkId)
+        && isValidBookmark(incoming())
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && (
+          // Action: Edit metadata or favorites
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'smartSummary', 'tags', 'category', 'isFavorite', 'updatedAt', 'favicon'])
+        );
+        
+      allow delete: if isOwner(userId) && isValidId(bookmarkId);
+    }
+  }
+}

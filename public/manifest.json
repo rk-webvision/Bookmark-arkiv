@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Arkiv: AI Bookmark Brain",
+  "version": "1.0.0",
+  "description": "Save bookmarks with AI-powered summaries and semantic search.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs",
+    "identity"
+  ],
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "Open Arkiv"
+  },
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "host_permissions": [
+    "https://*.firebaseapp.com/*",
+    "https://*.googleapis.com/*"
+  ],
+  "oauth2": {
+    "client_id": "67537666921-j8n778jvmd93359pilhig0dj3s16s2r6.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile"
+    ]
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "Bookmark": {
+      "title": "Bookmark",
+      "description": "A saved web resource with AI-generated metadata.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "url": { "type": "string", "format": "uri" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "smartSummary": { "type": "string" },
+        "tags": { 
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "category": { "type": "string" },
+        "favicon": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["id", "userId", "url", "title", "createdAt", "updatedAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["uid", "email", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "The root document for a user."
+    },
+    "/users/{userId}/bookmarks/{bookmarkId}": {
+      "schema": "Bookmark",
+      "description": "A user's saved bookmarks."
+    }
+  }
+}
